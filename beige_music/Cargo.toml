@@ -1,0 +1,8 @@
+[package]
+name = "beige_music"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+dasp = "0.11.0"
+sndfile = "0.1.1"
