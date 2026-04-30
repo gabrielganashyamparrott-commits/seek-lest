@@ -117,10 +117,31 @@ impl Wave {
         // write to sndfile
         sf.write_from_slice(&v).unwrap();
     }
-}
 
-// TODO BSPWaveTree
-pub struct BSPWaveTree {
-}
-impl BSPWaveTree {
+    pub fn samplerate(&self) -> usize {
+        self.samplerate
+    }
+
+    pub fn channels(&self) -> usize {
+        self.channels
+    }
+
+    pub fn get(&self, frame: usize) -> Sample {
+        self.samples[frame].clone()
+    }
+
+    pub fn push(&mut self, sample: Sample) {
+        self.samples.push(sample);
+    }
+
+    pub fn safe_set(&mut self, sample: Sample, frame: usize) {
+        if frame >= self.samples.len() {
+            self.push(sample);
+        } else {
+            self.samples[frame] = sample;
+        }
+    }
+    pub fn set(&mut self, sample: Sample, frame: usize) {
+        self.samples[frame] = sample;
+    }
 }
