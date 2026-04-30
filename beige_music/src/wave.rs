@@ -7,7 +7,7 @@ pub enum Sample {
 pub struct Wave {
     samplerate: usize,
     channels: usize,
-    pub samples: Vec<Sample>,
+    samples: Vec<Sample>,
 }
 impl Wave {
     pub fn new(
@@ -121,27 +121,20 @@ impl Wave {
     pub fn samplerate(&self) -> usize {
         self.samplerate
     }
-
     pub fn channels(&self) -> usize {
         self.channels
     }
-
+    pub fn len(&self) -> usize {
+        self.samples.len()
+    }
     pub fn get(&self, frame: usize) -> Sample {
         self.samples[frame].clone()
     }
-
     pub fn push(&mut self, sample: Sample) {
         self.samples.push(sample);
-    }
-
-    pub fn safe_set(&mut self, sample: Sample, frame: usize) {
-        if frame >= self.samples.len() {
-            self.push(sample);
-        } else {
-            self.samples[frame] = sample;
-        }
     }
     pub fn set(&mut self, sample: Sample, frame: usize) {
         self.samples[frame] = sample;
     }
+
 }
