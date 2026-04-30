@@ -1,8 +1,5 @@
-// TODO BSPWaveTree
-struct BSPWaveTree {
-}
-impl BSPWaveTree {
-}
+mod wave;
+use wave::*;
 
 fn main() {
 }
