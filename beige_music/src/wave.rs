@@ -1,3 +1,8 @@
+pub enum Channels {
+ One,
+ Two,
+}
+
 #[derive(Copy, Clone)]
 pub enum Sample {
     Mono(f32),
