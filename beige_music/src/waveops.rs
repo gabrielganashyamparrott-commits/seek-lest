@@ -250,13 +250,18 @@ pub fn stretch(
 
     // iterate through the source file at a rate of 1.0 / factor per iteration
     let mut src_iter = start_frame as f32;
+    let mut step_past = 0;
     let src_step = 1.0 / factor;
 
-    let mut accum = wav.get(start_frame);
+    // slope stretch
     while out.len() < new_frames {
-        let src_frame = src_iter.floor() as usize;
-        accum = avg(accum, wav.get(src_frame));
+        let src_frame = src_iter.floor() + step_past as f32;
+        let sample = wav.get(src_frame as usize);
+
+        out.push(sample);
+
         src_iter += src_step;
+        step_past = (step_past + 1) % (factor * 2.0) as usize;
     };
 
     out
