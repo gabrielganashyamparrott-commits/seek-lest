@@ -4,11 +4,13 @@ pub enum Sample {
     Stereo {left: f32, right: f32},
 }
 
+#[derive(Clone)]
 pub struct Wave {
     samplerate: usize,
     channels: usize,
     samples: Vec<Sample>,
 }
+
 impl Wave {
     pub fn new(
         samplerate: usize,
@@ -136,5 +138,4 @@ impl Wave {
     pub fn set(&mut self, sample: Sample, frame: usize) {
         self.samples[frame] = sample;
     }
-
 }

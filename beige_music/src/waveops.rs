@@ -1,6 +1,5 @@
 use super::wave::{
     Sample,
-    Wave,
 };
 
 pub fn rotate_cc(x: f32, y: f32, angle: f32) -> Sample {
@@ -16,3 +15,4 @@ pub fn rotate_cw(x: f32, y: f32, angle: f32) -> Sample {
 
     Sample::Stereo {left: u, right: v}
 }
+

@@ -1,6 +1,7 @@
 #[allow(dead_code)]
 mod wave;
 mod waveops;
+mod wavetree;
 use wave::Wave;
 
 fn main() {
