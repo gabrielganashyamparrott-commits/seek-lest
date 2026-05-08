@@ -239,6 +239,7 @@ pub fn stretch(
     start_frame: usize,
     end_frame: usize,
     factor: f32,
+    step: usize,
 ) -> Wave {
     // render stretch to a new Wave
     let samplerate = wav.samplerate();
@@ -253,15 +254,14 @@ pub fn stretch(
     let mut step_past = 0;
     let src_step = 1.0 / factor;
 
-    // slope stretch
     while out.len() < new_frames {
-        let src_frame = src_iter.floor() + step_past as f32;
+        let src_frame = (src_iter.floor() + step_past as f32).clamp(0f32, wav.len() as f32 - 1.0);
         let sample = wav.get(src_frame as usize);
 
         out.push(sample);
 
         src_iter += src_step;
-        step_past = (step_past + 1) % (factor * 2.0) as usize;
+        step_past = (step_past + 1) % step;
     };
 
     out

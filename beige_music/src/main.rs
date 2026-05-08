@@ -12,6 +12,6 @@ fn main() {
     let outfile = &args[2];
 
     let w = Wave::new_from_sndfile(infile);
-    let s = stretch(&w, 0, w.len() / 4, 1.5);
+    let s = stretch(&w, w.len() / 2, w.len(), 2.0, 8);
     s.write_to_wav16(outfile);
 }
