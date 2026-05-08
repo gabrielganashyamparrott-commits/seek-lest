@@ -352,28 +352,54 @@ pub fn concat(lhs: &Wave, rhs: &Wave) -> Wave {
     let mut out = Wave::new(lhs.samplerate(), lhs.channels());
     // push both Waves
     out.push_wave(lhs);
+    let blend_at = out.len() - 1;
     out.push_wave(rhs);
 
     // mend the seam
-    let ll = lhs.len() - 2;
-    let l = ll + 1;
-    let r = l + 1;
-    let rr = r + 1;
-    let lls = out.get(ll);
-    let ls = out.get(l);
-    let rs = out.get(r);
-    let rrs = out.get(rr);
-    let blendo = avg(lls, rrs);
-    let blendl = avg(blendo, avg(ls, lls));
-    let blendm = avg(blendo, avg(ls, rs));
-    let blendr = avg(blendo, avg(rs, rrs));
-    out.set(blendl, ll);
-    out.set(blendm, l);
-    out.set(blendm, r);
-    out.set(blendr, rr);
+    blendo(&mut out, blend_at);
 
     // return the concatenated Wave
     out
+}
+
+pub fn blendo(wav: &mut Wave, at: usize) {
+    let at = at.clamp(0, wav.len() - 1);
+
+    let ll = (at - 2).clamp(0, at);
+    let l = (at - 1).clamp(0, at);
+    let r = (at + 1).clamp(0, wav.len() - 1);
+    let rr = (at + 2).clamp(0, wav.len() - 1);
+    let lls = wav.get(ll);
+    let ls = wav.get(l);
+    let rs = wav.get(r);
+    let rrs = wav.get(rr);
+    let blendout = avg(lls, rrs);
+    let blendl = avg(blendout, avg(ls, lls));
+    let blendm = avg(blendout, avg(ls, rs));
+    let blendr = avg(blendout, avg(rs, rrs));
+    wav.set(blendl, ll);
+    wav.set(blendm, l);
+    wav.set(blendm, r);
+    wav.set(blendr, rr);
+}
+
+pub fn blendos(wav: &Wave, at: usize) -> Sample {
+    let at = at.clamp(0, wav.len() - 1);
+
+    let ll = (at - 2).clamp(0, at);
+    let l = (at - 1).clamp(0, at);
+    let r = (at + 1).clamp(0, wav.len() - 1);
+    let rr = (at + 2).clamp(0, wav.len() - 1);
+    let lls = wav.get(ll);
+    let ls = wav.get(l);
+    let rs = wav.get(r);
+    let rrs = wav.get(rr);
+    let blendout = avg(lls, rrs);
+    let blendl = avg(blendout, avg(ls, lls));
+    let blendm = avg(blendout, avg(ls, rs));
+    let blendr = avg(blendout, avg(rs, rrs));
+
+    avg(blendm, avg(blendl, blendr))
 }
 
 pub fn stretch(
@@ -398,7 +424,7 @@ pub fn stretch(
     // slope stretch
     while out.len() < new_frames {
         let src_frame = src_iter.floor() + step_past as f32;
-        let sample = wav.get(src_frame as usize);
+        let sample = blendos(&wav, (src_frame as usize).clamp(0, wav.len() - 1));
 
         out.push(sample);
 
@@ -407,4 +433,24 @@ pub fn stretch(
     };
 
     out
+}
+
+// TODO pluck
+
+pub fn beats_to_samples(
+    beats: f32,
+    bpm: f32,
+    samplerate: usize
+) -> usize {
+    let seconds = beats_to_seconds(beats, bpm);
+    (seconds * samplerate as f32) as usize
+}
+
+pub fn beats_to_seconds(
+    beats: f32,
+    bpm: f32
+) -> f32 {
+    let bps = bpm / 60f32;
+    
+    beats / bps
 }

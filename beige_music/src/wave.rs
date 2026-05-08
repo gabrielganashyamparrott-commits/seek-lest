@@ -1,3 +1,5 @@
+use super::waveops::blendo;
+
 pub enum Channels {
  One,
  Two,
@@ -144,9 +146,12 @@ impl Wave {
         self.samples[frame] = sample;
     }
     pub fn push_wave(&mut self, wav: &Wave) {
+        let blend_at = self.len() - 1;
         for idx in 0..wav.len() {
             let s = wav.get(idx);
             self.push(s);
         }
+
+        blendo(self, blend_at);
     }
 }
