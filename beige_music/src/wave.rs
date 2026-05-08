@@ -143,4 +143,10 @@ impl Wave {
     pub fn set(&mut self, sample: Sample, frame: usize) {
         self.samples[frame] = sample;
     }
+    pub fn push_wave(&mut self, wav: &Wave) {
+        for idx in 0..wav.len() {
+            let s = wav.get(idx);
+            self.push(s);
+        }
+    }
 }

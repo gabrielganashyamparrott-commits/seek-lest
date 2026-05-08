@@ -4,6 +4,109 @@ use super::wave::{
     Channels,
 };
 
+use std::ops::{
+    Add,
+    Sub,
+    Div,
+    Mul,
+    Rem,
+    Neg,
+};
+
+impl Add for Sample {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        add(self, other)
+    }
+}
+
+impl Add<f32> for Sample {
+    type Output = Self;
+
+    fn add(self, other: f32) -> Self {
+        offset(self, other)
+    }
+}
+
+impl Add<Sample> for f32 {
+    type Output = Sample;
+
+    fn add(self, other: Sample) -> Sample {
+        offset(other, self)
+    }
+}
+
+impl Sub for Sample {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self {
+        sub(self, other)
+    }
+}
+
+impl Sub<f32> for Sample {
+    type Output = Self;
+
+    fn sub(self, other: f32) -> Self {
+        offset(self, -1f32 * other)
+    }
+}
+
+impl Sub<Sample> for f32 {
+    type Output = Sample;
+
+    fn sub(self, other: Sample) -> Sample {
+        -(other - self)
+    }
+}
+
+impl Div for Sample {
+    type Output = Self;
+
+    fn div(self, other: Sample) -> Self {
+        div(self, other)
+    }
+}
+
+impl Div<f32> for Sample {
+    type Output = Self;
+    fn div(self, other: f32) -> Self {
+        scale(self, 1f32 / other)
+    }
+}
+
+impl Mul for Sample {
+    type Output = Self;
+
+    fn mul(self, other: Sample) -> Self {
+        mul(self, other)
+    }
+}
+
+impl Mul<f32> for Sample {
+    type Output = Self;
+
+    fn mul(self, other: f32) -> Self {
+        scale(self, other)
+    }
+}
+
+impl Rem<f32> for Sample {
+    type Output = Self;
+
+    fn rem(self, other: f32) -> Self {
+        rem(self, other)
+    }
+}
+
+impl Neg for Sample {
+    type Output = Self;
+    fn neg(self) -> Self {
+        neg(self)
+    }
+}
+
 pub fn rotate_cc(x: f32, y: f32, angle: f32) -> Sample {
     let u = (x * angle.cos()) - (y * angle.sin());
     let v = (x * angle.sin()) + (y * angle.cos());
@@ -65,26 +168,15 @@ pub fn add(lhs: Sample, rhs: Sample) -> Sample {
     }
 }
 
-pub fn rem(lhs: Sample, rhs: Sample) -> Sample {
+pub fn rem(lhs: Sample, rhs: f32) -> Sample {
     match lhs {
         Sample::Mono(x) => {
-            match rhs {
-                Sample::Mono(a) => {
-                    Sample::Mono(x % a)
-                },
-                Sample::Stereo {left: a, right: b} => {
-                    Sample::Stereo {left: x % a, right: x % b}
-                },
-            }
+            Sample::Mono(x % rhs)
         },
         Sample::Stereo {left: x, right: y} => {
-            match rhs {
-                Sample::Mono(a) => {
-                    Sample::Stereo {left: x % a, right: y % a}
-                },
-                Sample::Stereo {left: a, right: b} => {
-                    Sample::Stereo {left: x % a, right: y % b}
-                },
+            Sample::Stereo {
+                left: x % rhs,
+                right: y % rhs,
             }
         },
     }
@@ -133,7 +225,9 @@ pub fn mul(lhs: Sample, rhs: Sample) -> Sample {
                     Sample::Stereo {left: x * a, right: y * a}
                 },
                 Sample::Stereo {left: a, right: b} => {
-                    Sample::Stereo {left: x * a, right: y * b}
+                    let re = (x * a) + (y * b);
+                    let im = (x * b) + (y * a);
+                    Sample::Stereo {left: re, right: im}
                 },
             }
         },
@@ -148,17 +242,26 @@ pub fn div(lhs: Sample, rhs: Sample) -> Sample {
                     Sample::Mono(x / a)
                 },
                 Sample::Stereo {left: a, right: b} => {
-                    Sample::Stereo {left: x / a, right: x / b}
+                    let ln = (x * a) + (x * b);
+                    let rn = (x * a) - (x * b);
+                    let d = a.powf(2f32) + b.powf(2f32);
+                    Sample::Stereo {left: ln / d, right: rn / d}
                 },
             }
         },
         Sample::Stereo {left: x, right: y} => {
             match rhs {
                 Sample::Mono(a) => {
-                    Sample::Stereo {left: x / a, right: y / a}
+                    let ln = (x*a) + (y*a);
+                    let rn = (y*a) - (x*a);
+                    let d = 2f32 * a.powf(2f32);
+                    Sample::Stereo {left: ln / d, right: rn / d}
                 },
                 Sample::Stereo {left: a, right: b} => {
-                    Sample::Stereo {left: x / a, right: y / b}
+                    let ln = (x * a) + (y * b);
+                    let rn = (y * a) - (x * b);
+                    let d = a.powf(2f32) + b.powf(2f32);
+                    Sample::Stereo {left: ln / d, right: rn / d}
                 },
             }
         },
@@ -232,6 +335,45 @@ pub fn offset(s: Sample, o: f32) -> Sample {
             Sample::Stereo {left: x + o, right: y + o}
         }
     }
+}
+
+pub fn powf(s: Sample, p: f32) -> Sample {
+    match s {
+        Sample::Mono(x) => {
+            Sample::Mono(x.powf(p))
+        },
+        Sample::Stereo { left: x, right: y } => {
+            Sample::Stereo { left: x.powf(p), right: y.powf(p) }
+        }
+    }
+}
+
+pub fn concat(lhs: &Wave, rhs: &Wave) -> Wave {
+    let mut out = Wave::new(lhs.samplerate(), lhs.channels());
+    // push both Waves
+    out.push_wave(lhs);
+    out.push_wave(rhs);
+
+    // mend the seam
+    let ll = lhs.len() - 2;
+    let l = ll + 1;
+    let r = l + 1;
+    let rr = r + 1;
+    let lls = out.get(ll);
+    let ls = out.get(l);
+    let rs = out.get(r);
+    let rrs = out.get(rr);
+    let blendo = avg(lls, rrs);
+    let blendl = avg(blendo, avg(ls, lls));
+    let blendm = avg(blendo, avg(ls, rs));
+    let blendr = avg(blendo, avg(rs, rrs));
+    out.set(blendl, ll);
+    out.set(blendm, l);
+    out.set(blendm, r);
+    out.set(blendr, rr);
+
+    // return the concatenated Wave
+    out
 }
 
 pub fn stretch(
